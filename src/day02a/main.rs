@@ -1,28 +1,30 @@
 use anyhow::anyhow;
-use std::{cmp::Ordering, fs::File, io::BufRead, io::BufReader};
+use std::{fs::File, io::BufRead, io::BufReader};
 
-#[derive(Eq, PartialEq)]
 enum Shape {
     Rock,
     Paper,
     Scissors,
 }
 
+enum Outcome {
+    Win,
+    Loss,
+    Draw,
+}
+
 impl Shape {
-    pub fn from_opponent_choice(choice: &str) -> anyhow::Result<Shape> {
-        match choice {
-            "A" => Ok(Shape::Rock),
-            "B" => Ok(Shape::Paper),
-            "C" => Ok(Shape::Scissors),
-            _ => Err(anyhow!("invalid opponent choice: {}", choice)),
-        }
-    }
-    pub fn from_your_choice(choice: &str) -> anyhow::Result<Shape> {
-        match choice {
-            "X" => Ok(Shape::Rock),
-            "Y" => Ok(Shape::Paper),
-            "Z" => Ok(Shape::Scissors),
-            _ => Err(anyhow!("invalid choice: {}", choice)),
+    pub fn play(&self, other: &Shape) -> Outcome {
+        match (self, other) {
+            (Shape::Rock, Shape::Rock)
+            | (Shape::Paper, Shape::Paper)
+            | (Shape::Scissors, Shape::Scissors) => Outcome::Draw,
+            (Shape::Rock, Shape::Paper) => Outcome::Loss,
+            (Shape::Rock, Shape::Scissors) => Outcome::Win,
+            (Shape::Paper, Shape::Rock) => Outcome::Win,
+            (Shape::Paper, Shape::Scissors) => Outcome::Loss,
+            (Shape::Scissors, Shape::Rock) => Outcome::Loss,
+            (Shape::Scissors, Shape::Paper) => Outcome::Win,
         }
     }
     pub fn score(&self) -> u32 {
@@ -33,33 +35,32 @@ impl Shape {
         }
     }
 }
-impl Ord for Shape {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Shape::Rock, Shape::Rock)
-            | (Shape::Paper, Shape::Paper)
-            | (Shape::Scissors, Shape::Scissors) => Ordering::Equal,
-            (Shape::Rock, Shape::Paper) => Ordering::Less,
-            (Shape::Rock, Shape::Scissors) => Ordering::Greater,
-            (Shape::Paper, Shape::Rock) => Ordering::Greater,
-            (Shape::Paper, Shape::Scissors) => Ordering::Less,
-            (Shape::Scissors, Shape::Rock) => Ordering::Less,
-            (Shape::Scissors, Shape::Paper) => Ordering::Greater,
+
+impl TryFrom<char> for Shape {
+    type Error = anyhow::Error;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            'A' | 'X' => Ok(Shape::Rock),
+            'B' | 'Y' => Ok(Shape::Paper),
+            'C' | 'Z' => Ok(Shape::Scissors),
+            _ => Err(anyhow!("invalid shape: {}", value)),
         }
     }
 }
-impl PartialOrd for Shape {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+
+impl Outcome {
+    fn score(&self) -> u32 {
+        match self {
+            Outcome::Loss => 0,
+            Outcome::Draw => 3,
+            Outcome::Win => 6,
+        }
     }
 }
 
-fn score_round(opponent_choice: &Shape, your_choice: &Shape) -> u32 {
-    (match your_choice.cmp(opponent_choice) {
-        Ordering::Less => 0,
-        Ordering::Equal => 3,
-        Ordering::Greater => 6,
-    }) + your_choice.score()
+fn score_round(opponent_shape: &Shape, your_shape: &Shape) -> u32 {
+    your_shape.play(opponent_shape).score() + your_shape.score()
 }
 
 fn main() -> anyhow::Result<()> {
@@ -68,14 +69,17 @@ fn main() -> anyhow::Result<()> {
     let file = File::open("input/day02.txt")?;
 
     for line in BufReader::new(file).lines().flatten() {
-        let (opponent, yours) = line
-            .split_once(' ')
-            .ok_or_else(|| anyhow!("parsing failed"))?;
+        let mut chars = line.chars();
 
-        let opponent_choice = Shape::from_opponent_choice(opponent)?;
-        let your_choice = Shape::from_your_choice(yours)?;
+        let opponent: Option<Shape> = chars.next().and_then(|c| Shape::try_from(c).ok());
+        let _ = chars.next();
+        let you: Option<Shape> = chars.next().and_then(|c| Shape::try_from(c).ok());
 
-        let score = score_round(&opponent_choice, &your_choice);
+        let (Some(opponent), Some(you)) = (opponent, you) else {
+            return Err(anyhow!("Failed parsing"));
+        };
+
+        let score = score_round(&opponent, &you);
 
         total += score;
     }
