@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow="1.0"
+itertools="0.10"
+
 
 [[bin]]
 name = "day01a"
@@ -23,3 +25,11 @@ path = "src/day02a/main.rs"
 [[bin]]
 name = "day02b"
 path = "src/day02b/main.rs"
+
+[[bin]]
+name = "day03a"
+path = "src/day03a/main.rs"
+
+[[bin]]
+name = "day03b"
+path = "src/day03b/main.rs"
