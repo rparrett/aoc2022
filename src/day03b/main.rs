@@ -15,15 +15,14 @@ fn main() -> anyhow::Result<()> {
 
     let file = File::open("input/day03.txt")?;
 
-    for (one, two, three) in BufReader::new(file).lines().flatten().tuples::<(_, _, _)>() {
-        let one: HashSet<char> = one.chars().collect();
-        let two: HashSet<char> = two.chars().collect();
-        let three: HashSet<char> = three.chars().collect();
-
-        let intersection = one.intersection(&two).copied().collect::<HashSet<char>>();
-        let mut intersection = intersection.intersection(&three);
+    for chunk in BufReader::new(file).lines().flatten().chunks(3).into_iter() {
+        let intersection = chunk
+            .map(|pack| pack.chars().collect::<HashSet<char>>())
+            .reduce(|int, set| set.intersection(&int).cloned().collect())
+            .unwrap();
 
         let badge = intersection
+            .iter()
             .next()
             .ok_or_else(|| anyhow!("badge not found"))?;
 
