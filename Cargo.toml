@@ -49,3 +49,11 @@ path = "src/day05a/main.rs"
 [[bin]]
 name = "day05b"
 path = "src/day05b/main.rs"
+
+[[bin]]
+name = "day06a"
+path = "src/day06a/main.rs"
+
+[[bin]]
+name = "day06b"
+path = "src/day06b/main.rs"
