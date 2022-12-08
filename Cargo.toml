@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 anyhow="1.0"
 itertools="0.10"
+chumsky="0.8"
+indextree = "4.5"
 
 
 [[bin]]
@@ -57,3 +59,7 @@ path = "src/day06a/main.rs"
 [[bin]]
 name = "day06b"
 path = "src/day06b/main.rs"
+
+[[bin]]
+name = "day07a"
+path = "src/day07a/main.rs"
