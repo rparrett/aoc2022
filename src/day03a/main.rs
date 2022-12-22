@@ -19,7 +19,7 @@ fn main() -> anyhow::Result<()> {
 
         let intersection = compartment_one.intersection(&compartment_two);
 
-        let sum: u32 = intersection.map(|c| priority(*c) as u32).sum();
+        let sum: u32 = intersection.map(|c| priority(*c)).sum();
         total += sum;
     }
 
