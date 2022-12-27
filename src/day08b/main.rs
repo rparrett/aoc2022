@@ -24,6 +24,34 @@ impl Grid {
     fn zeros(rows: usize, cols: usize) -> Self {
         Grid(vec![vec![0; cols]; rows])
     }
+    fn enumerate_rows(
+        &self,
+    ) -> impl Iterator<Item = impl Iterator<Item = (usize, usize, &u32)> + Clone + '_> {
+        (0..self.rows())
+            .map(move |row| (0..self.cols()).map(move |col| (row, col, &self.0[row][col])))
+    }
+    fn enumerate_cols(
+        &self,
+    ) -> impl Iterator<Item = impl Iterator<Item = (usize, usize, &u32)> + '_> {
+        (0..self.cols())
+            .map(move |col| (0..self.rows()).map(move |row| (row, col, &self.0[row][col])))
+    }
+    fn iter(&self) -> impl Iterator<Item = &u32> + '_ {
+        self.0.iter().flat_map(|row| row.iter())
+    }
+}
+
+fn trees_visible<'a>(val: u32, line_of_sight: impl Iterator<Item = &'a u32>) -> u32 {
+    let mut dist = 0;
+    for val2 in line_of_sight {
+        if val > *val2 {
+            dist += 1;
+        } else {
+            dist += 1;
+            break;
+        }
+    }
+    dist
 }
 
 fn main() -> anyhow::Result<()> {
@@ -43,67 +71,27 @@ fn main() -> anyhow::Result<()> {
 
     let mut visibility_grid = Grid::zeros(rows, cols);
 
-    for y in 0..rows {
-        // west -> east
-        for x in 1..cols {
-            let mut dist = 0;
-            for x2 in (0..x).rev() {
-                if grid.0[y][x] > grid.0[y][x2] {
-                    dist += 1;
-                } else {
-                    dist += 1;
-                    break;
-                }
-            }
-            visibility_grid.0[y][x] = dist;
-        }
+    grid.enumerate_rows().for_each(|line| {
+        line.skip(1).for_each(|(row, col, val)| {
+            let dist_left = trees_visible(*val, (0..col).rev().map(|col2| &grid.0[row][col2]));
+            visibility_grid.0[row][col] = dist_left;
 
-        // east -> west
-        for x in (0..(cols - 1)).rev() {
-            let mut dist = 0;
-            for x2 in (x + 1)..cols {
-                if grid.0[y][x] > grid.0[y][x2] {
-                    dist += 1;
-                } else {
-                    dist += 1;
-                    break;
-                }
-            }
-            visibility_grid.0[y][x] *= dist;
-        }
-    }
+            let dist_right = trees_visible(*val, ((col + 1)..cols).map(|col2| &grid.0[row][col2]));
+            visibility_grid.0[row][col] *= dist_right;
+        });
+    });
 
-    for x in 0..cols {
-        // north -> south
-        for y in 1..rows {
-            let mut dist = 0;
-            for y2 in (0..y).rev() {
-                if grid.0[y][x] > grid.0[y2][x] {
-                    dist += 1;
-                } else {
-                    dist += 1;
-                    break;
-                }
-            }
-            visibility_grid.0[y][x] *= dist;
-        }
+    grid.enumerate_cols().for_each(|line| {
+        line.skip(1).for_each(|(row, col, val)| {
+            let dist_up = trees_visible(*val, (0..row).rev().map(|row2| &grid.0[row2][col]));
+            visibility_grid.0[row][col] *= dist_up;
 
-        // south -> north
-        for y in (0..(cols - 1)).rev() {
-            let mut dist = 0;
-            for y2 in (y + 1)..cols {
-                if grid.0[y][x] > grid.0[y2][x] {
-                    dist += 1;
-                } else {
-                    dist += 1;
-                    break;
-                }
-            }
-            visibility_grid.0[y][x] *= dist;
-        }
-    }
+            let dist_down = trees_visible(*val, ((row + 1)..rows).map(|row2| &grid.0[row2][col]));
+            visibility_grid.0[row][col] *= dist_down;
+        })
+    });
 
-    let most_visibility = visibility_grid.0.iter().flat_map(|row| row.iter()).max();
+    let most_visibility = visibility_grid.iter().max();
 
     println!("most visibility: {:?}", most_visibility);
 
